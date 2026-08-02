@@ -13,6 +13,7 @@ RUN apt-get update \
         gperf \
         libssl-dev \
         make \
+        ninja-build \
         zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
@@ -23,9 +24,10 @@ RUN git clone --recursive https://github.com/tdlib/telegram-bot-api.git /src \
 WORKDIR /src
 
 RUN cmake -S . -B build \
+        -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX=/usr/local \
-    && cmake --build build --target install --parallel
+    && cmake --build build --target install --parallel 2
 
 FROM ubuntu:24.04 AS runtime
 
