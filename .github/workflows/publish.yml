@@ -18,7 +18,7 @@ permissions:
 
 concurrency:
   group: telegram-bot-api-publish
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   SOURCE_REPOSITORY: https://github.com/tdlib/telegram-bot-api.git
@@ -65,7 +65,6 @@ jobs:
             org.opencontainers.image.source=https://github.com/tdlib/telegram-bot-api
             org.opencontainers.image.revision=${{ steps.upstream.outputs.sha }}
           cache-from: type=gha,scope=telegram-bot-api
-          cache-to: type=gha,mode=max,scope=telegram-bot-api
 
       - name: Smoke test official binary
         run: |
@@ -103,4 +102,3 @@ jobs:
           build-args: |
             TELEGRAM_BOT_API_REF=${{ steps.upstream.outputs.sha }}
           cache-from: type=gha,scope=telegram-bot-api
-          cache-to: type=gha,mode=max,scope=telegram-bot-api
