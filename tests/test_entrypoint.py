@@ -59,6 +59,23 @@ class EntryPointTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(arguments, ["--api-id", "123456", "--api-hash", "hash-value"])
 
+    def test_passes_http_ip_address_when_configured(self):
+        result, arguments = self.run_entrypoint(
+            TELEGRAM_API_ID="123456",
+            TELEGRAM_API_HASH="hash-value",
+            TELEGRAM_HTTP_PORT="8081",
+            TELEGRAM_HTTP_IP_ADDRESS="127.0.0.1",
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            arguments,
+            [
+                "--api-id", "123456", "--api-hash", "hash-value",
+                "--http-port", "8081", "--http-ip-address", "127.0.0.1",
+            ],
+        )
+
     def test_rejects_missing_api_credentials(self):
         result, arguments = self.run_entrypoint(TELEGRAM_LOCAL="1")
 

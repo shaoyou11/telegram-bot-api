@@ -30,9 +30,12 @@ NAS 当前使用 `latest`。更新脚本会在切换前给旧镜像建立本机�
 | `TELEGRAM_API_HASH` | Telegram API Hash。 |
 | `TELEGRAM_LOCAL=1` | 启用 Telegram 官方本地模式。 |
 | `TELEGRAM_HTTP_PORT` | 本地 Bot API 服务端口。 |
+| `TELEGRAM_HTTP_IP_ADDRESS` | 可选监听地址；生产环境使用 `127.0.0.1`，避免 Bot API 暴露到局域网。 |
 
 `TELEGRAM_LOCAL=1` 使用 Telegram 官方本地模式。官方说明该模式支持下载不设大小限制、上传最高 2000 MB，
 以及返回本地文件路径。实际 EFB 转发上限仍取决于 EFB、ComWechat Bridge、存储空间和网络稳定性。
+
+生产部署使用 `latest`，固定的 `upstream-<官方完整提交 SHA>` 仅用于回滚和复现。Pull Request 只执行构建与烟雾测试，不推送生产标签；合并到主分支后才更新 GHCR。生产更新前由 EFB 维护流程先排空投递队列，并保留旧镜像回滚标签。
 
 ## 数据持久化
 
