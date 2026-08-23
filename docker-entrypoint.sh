@@ -14,4 +14,8 @@ if [ -n "${TELEGRAM_HTTP_PORT:-}" ]; then
     set -- "$@" --http-port "$TELEGRAM_HTTP_PORT"
 fi
 
+if [ -n "${TELEGRAM_HTTP_IP_ADDRESS:-}" ]; then
+    set -- "$@" --http-ip-address "$TELEGRAM_HTTP_IP_ADDRESS"
+fi
+
 exec telegram-bot-api "$@"
