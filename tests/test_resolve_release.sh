@@ -26,6 +26,11 @@ same_push=$(EVENT_NAME=push TAG_EXISTS=true bash "$SCRIPT")
 assert_output "$same_push" "build_required=true"
 assert_output "$same_push" "publish_required=true"
 
+pull_request=$(EVENT_NAME=pull_request TAG_EXISTS=false bash "$SCRIPT")
+assert_output "$pull_request" "build_required=true"
+assert_output "$pull_request" "publish_required=false"
+assert_output "$pull_request" "reason=pull-request-verification"
+
 new_schedule=$(EVENT_NAME=schedule TAG_EXISTS=false bash "$SCRIPT")
 assert_output "$new_schedule" "build_required=true"
 assert_output "$new_schedule" "publish_required=true"

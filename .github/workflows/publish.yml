@@ -1,6 +1,14 @@
 name: publish
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - Dockerfile
+      - entrypoint.sh
+      - scripts/**
+      - tests/**
+      - .github/workflows/publish.yml
   push:
     branches: [main]
   schedule:
@@ -35,6 +43,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Test release decisions
+        run: |
+          bash tests/test_resolve_release.sh
+          bash tests/test_check_image_tag.sh
+
       - name: Resolve official source revision
         id: upstream
         shell: bash
@@ -65,13 +78,9 @@ jobs:
       - name: Check whether upstream revision is already published
         id: existing
         shell: bash
-        run: |
-          if docker buildx imagetools inspect \
-            "$IMAGE:upstream-${{ steps.upstream.outputs.sha }}" >/dev/null 2>&1; then
-            echo "tag_exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag_exists=false" >> "$GITHUB_OUTPUT"
-          fi
+        env:
+          IMAGE_REF: ${{ env.IMAGE }}:upstream-${{ steps.upstream.outputs.sha }}
+        run: bash scripts/check-image-tag.sh >> "$GITHUB_OUTPUT"
 
       - name: Decide build and publish scope
         id: decision

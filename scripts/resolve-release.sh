@@ -9,7 +9,11 @@ build_required=true
 publish_required=true
 reason=new-upstream-revision
 
-if [ "$force_publish" = "true" ]; then
+if [ "$event_name" = "pull_request" ]; then
+    build_required=true
+    publish_required=false
+    reason=pull-request-verification
+elif [ "$force_publish" = "true" ]; then
     reason=manual-force-publish
 elif [ "$tag_exists" != "true" ]; then
     reason=new-upstream-revision
