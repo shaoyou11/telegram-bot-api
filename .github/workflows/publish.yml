@@ -1,6 +1,14 @@
 name: publish
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - Dockerfile
+      - entrypoint.sh
+      - scripts/**
+      - tests/**
+      - .github/workflows/publish.yml
   push:
     branches: [main]
   schedule:
@@ -11,6 +19,11 @@ on:
         description: "官方仓库分支、标签或完整提交 SHA；留空使用官方默认分支"
         required: false
         type: string
+      force_publish:
+        description: "即使官方 SHA 已发布，也重新推送镜像"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -29,6 +42,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Test release decisions
+        run: |
+          bash tests/test_resolve_release.sh
+          bash tests/test_check_image_tag.sh
 
       - name: Resolve official source revision
         id: upstream
@@ -57,7 +75,24 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
+      - name: Check whether upstream revision is already published
+        id: existing
+        shell: bash
+        env:
+          IMAGE_REF: ${{ env.IMAGE }}:upstream-${{ steps.upstream.outputs.sha }}
+        run: bash scripts/check-image-tag.sh >> "$GITHUB_OUTPUT"
+
+      - name: Decide build and publish scope
+        id: decision
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          TAG_EXISTS: ${{ steps.existing.outputs.tag_exists }}
+          FORCE_PUBLISH: ${{ inputs.force_publish || false }}
+        run: bash scripts/resolve-release.sh >> "$GITHUB_OUTPUT"
+
       - name: Build test image
+        if: steps.decision.outputs.build_required == 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -71,18 +106,21 @@ jobs:
           cache-from: type=gha,scope=telegram-bot-api
 
       - name: Smoke test official binary
+        if: steps.decision.outputs.build_required == 'true'
         run: |
           set -euo pipefail
           docker run --rm --entrypoint /usr/local/bin/telegram-bot-api telegram-bot-api:test --version
           docker run --rm --entrypoint /usr/local/bin/telegram-bot-api telegram-bot-api:test --help >/dev/null
 
       - uses: docker/login-action@v3
+        if: steps.decision.outputs.publish_required == 'true'
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: docker/metadata-action@v5
+        if: steps.decision.outputs.publish_required == 'true'
         id: meta
         with:
           images: ${{ env.IMAGE }}
@@ -96,6 +134,7 @@ jobs:
             org.opencontainers.image.description=Telegram official Bot API server built from source by shaoyou11
 
       - name: Publish image
+        if: steps.decision.outputs.publish_required == 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
