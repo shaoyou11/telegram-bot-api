@@ -1,0 +1,7 @@
+# Preserve the deployed official Bot API binary, UID and entrypoint.
+FROM ghcr.io/shaoyou11/telegram-bot-api@sha256:3ef7ad38566ac54cca97d787ff22d293a7ffdc8ce7031791d3e59fa78c5de4d6
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends --only-upgrade libssl3t64 openssl \
+    && /usr/local/bin/telegram-bot-api --version
+USER 101:101
