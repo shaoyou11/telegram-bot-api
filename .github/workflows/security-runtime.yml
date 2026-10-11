@@ -28,7 +28,7 @@ jobs:
       - name: Validate binary and entrypoint
         run: |
           python3 -m unittest discover -s tests
-          docker run --rm --network none --entrypoint sh ghcr.io/shaoyou11/telegram-bot-api:security-${{ github.sha }} -ec 'test -z "$(dpkg --audit)"; test "$(apt list --upgradable 2>/dev/null | wc -l)" -eq 1' 
+          docker run --rm --network none --entrypoint sh ghcr.io/shaoyou11/telegram-bot-api:security-${{ github.sha }} -ec 'test -z "$(dpkg --audit)"; test "$(apt list --upgradable 2>/dev/null | wc -l)" -eq 1'
           docker run --rm --network none --entrypoint /usr/local/bin/telegram-bot-api ghcr.io/shaoyou11/telegram-bot-api:security-${{ github.sha }} --version
           docker run --rm --network none --entrypoint /usr/local/bin/telegram-bot-api ghcr.io/shaoyou11/telegram-bot-api:security-${{ github.sha }} --help >/dev/null
       - name: Scan runtime
