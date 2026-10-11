@@ -1,0 +1,51 @@
+name: Validate runtime security refresh
+on:
+  push:
+    branches: [fix/runtime-security-20261011]
+    paths: [Dockerfile.security, .github/workflows/security-runtime.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: write
+jobs:
+  security-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
+        with:
+          registry: ghcr.io
+          username: shaoyou11
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a
+        with:
+          context: .
+          file: Dockerfile.security
+          load: true
+          tags: ghcr.io/shaoyou11/telegram-bot-api:security-${{ github.sha }}
+      - name: Validate binary and entrypoint
+        run: |
+          python3 -m unittest discover -s tests
+          docker run --rm --network none --entrypoint sh ghcr.io/shaoyou11/telegram-bot-api:security-${{ github.sha }} -ec 'test -z "$(dpkg --audit)"; test "$(apt list --upgradable 2>/dev/null | wc -l)" -eq 1'
+          docker run --rm --network none --entrypoint /usr/local/bin/telegram-bot-api ghcr.io/shaoyou11/telegram-bot-api:security-${{ github.sha }} --version
+          docker run --rm --network none --entrypoint /usr/local/bin/telegram-bot-api ghcr.io/shaoyou11/telegram-bot-api:security-${{ github.sha }} --help >/dev/null
+      - name: Scan runtime
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          image-ref: ghcr.io/shaoyou11/telegram-bot-api:security-${{ github.sha }}
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+          format: json
+          output: bot-api-security.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bot-api-security
+          path: bot-api-security.json
+          retention-days: 7
+      - name: Publish verified image
+        run: docker push ghcr.io/shaoyou11/telegram-bot-api:security-${{ github.sha }}
